@@ -1,5 +1,4 @@
 import numpy as np
-import librosa
 
 class FeatureExtractor:
     def __init__(self):
