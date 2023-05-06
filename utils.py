@@ -1,8 +1,8 @@
 import os
 import numpy as np
 from scipy.io import wavfile
+from scipy.signal import find_peaks
 
-import scipy.signal as signal
 def read_wav_file(file_path: str):
     sample_rate, signal = wavfile.read(filename = file_path)
     return sample_rate, signal
@@ -66,34 +66,48 @@ def BinarySearch(start : float, end : float, start_list : list, end_list : list)
 
 def get_f0_peak_searching(ma_features: np.ndarray, sample_rate: int) -> tuple:
     f0_list = []
-    time_list = []
+   
     
     for i in range(ma_features.shape[0]):
+        mag_spectrum = np.abs(np.fft.fft(ma_features[i]))[:len(ma_features[i]) // 2]
+        freqs = np.fft.fftfreq(len(mag_spectrum), d=1/sample_rate)[:len(mag_spectrum)]
+        peaks, _ = find_peaks(mag_spectrum, distance=5)
         
-        acf = signal.correlate(ma_features[i], ma_features[i], mode="full")
-        acf = acf[len(acf)//2:]
-        peaks, _ = signal.find_peaks(acf, distance=10)
         if len(peaks) > 0:
-            peak = peaks[0]
-            f0 = sample_rate / peak
+            peak_freq = freqs[peaks[0]]
+            f0 = sample_rate / peak_freq
             f0_list.append(f0)
         else:
-            f0_list.append(0)
-        time_list.append(i * 0.03)
-    return f0_list, time_list
-
+            f0_list.append(0)     
+    
+    return f0_list
+   
+   
 def get_f0_hps(ma_features: np.ndarray, sample_rate: int) -> tuple:
     f0_list = []
-    time_list = []
+ 
+    
     for i in range(ma_features.shape[0]):
-        signal = ma_features[i]
-        signal -= np.mean(signal)
-        N = len(signal)
-        hps_signal = signal[:N//2] * signal[:N//2//2] * signal[:N//2//3] * signal[:N//2//4]
-        fft_signal = np.abs(np.fft.rfft(hps_signal))
-        freqs = np.fft.rfftfreq(N, d=1/sample_rate)
-        peak = freqs[np.argmax(fft_signal)]
-        f0_list.append(peak)
-        time_list.append(i * 0.03)
-    return f0_list, time_list
+        mag_spectrum = np.abs(np.fft.fft(ma_features[i]))[:len(ma_features[i]) // 2]
+        freqs = np.fft.fftfreq(len(mag_spectrum), d=1/sample_rate)[:len(mag_spectrum)]
+        
+        hps_spectrum = mag_spectrum.copy()
+        
+        for harmonic in range(2, 8): 
+            if len(mag_spectrum) % harmonic == 0:
+                hps_spectrum *= mag_spectrum[::harmonic]
+            else:
+                repeated_mag_spectrum = np.repeat(mag_spectrum[::harmonic], harmonic)[:len(mag_spectrum)]
+                hps_spectrum *= repeated_mag_spectrum
 
+        
+        peak_idx = np.argmax(hps_spectrum)
+        peak_freq = freqs[peak_idx]
+        if peak_freq == 0:
+            f0 = 0
+        else:
+            f0 = sample_rate / peak_freq
+        f0_list.append(f0)
+   
+    
+    return f0_list
