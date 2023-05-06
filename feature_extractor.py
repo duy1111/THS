@@ -35,19 +35,6 @@ class FeatureExtractor:
             return np.mean(np.array(result) / np.max(np.abs(result)))
         return np.array(result) / np.max(np.array(result))
 
-    def extract(self, signal, sample_rate):
-        frame_length = int(0.02 * sample_rate)  # frame length: 20ms
-        frame_shift = int(0.01 * sample_rate)  # frame shift: 10ms
-        frames = librosa.util.frame(signal, frame_length=frame_length, hop_length=frame_shift).T
-        
-        ma_feats = self.ma(frames, is_statistic=True)  # calculate MA features
-        f0 = None
-        spectrum = None
-        if len(signal) > 0:
-            spectrum = np.abs(np.fft.fft(signal))**2  # calculate spectrum using FFT
-            freqs = np.fft.fftfreq(len(spectrum), 1/sample_rate)  # calculate corresponding frequency values
-            idx = np.argmax(spectrum[:len(spectrum)//2])  # find index of maximum peak in spectrum
-           
 
 
 

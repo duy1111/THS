@@ -71,7 +71,7 @@ def get_f0_peak_searching(ma_features: np.ndarray, sample_rate: int) -> tuple:
     for i in range(ma_features.shape[0]):
         mag_spectrum = np.abs(np.fft.fft(ma_features[i]))[:len(ma_features[i]) // 2]
         freqs = np.fft.fftfreq(len(mag_spectrum), d=1/sample_rate)[:len(mag_spectrum)]
-        peaks, _ = find_peaks(mag_spectrum, distance=5)
+        peaks, _ = find_peaks(mag_spectrum, distance=3)
         
         if len(peaks) > 0:
             peak_freq = freqs[peaks[0]]
