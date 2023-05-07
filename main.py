@@ -106,8 +106,14 @@ if __name__ == "__main__":
             if f0_peak_searching[i] < 70 or f0_peak_searching[i] > 400:
                 f0_peak_searching[i] = float("Nan")
       
-        x = [((start+end)/2)/sample_rate for start, end in vowel]
-        y = f0_peak_searching
+        x = np.arange(int(signal.shape[0] / (sample_rate * 0.03)))
+        y = np.full(shape = x.shape, fill_value=np.nan)
+        count = 0
+        for start, end in vowel:
+            idx = int(start / (0.03 * sample_rate))
+            y[idx] = f0_peak_searching[count]
+            count += 1
+            
         ax1.scatter(x, y)
         ax1.set_xlabel("Time (s)")
         ax1.set_ylabel("F0 (Hz)")
