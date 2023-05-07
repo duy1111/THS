@@ -71,7 +71,9 @@ if __name__ == "__main__":
         end = file_infos[file_name]['end']
         
         sample_rate, signal = read_wav_file(file_path)
-        
+        signal = normalization(signal)
+        signal = filter(signal)
+
         lab_files = read_lab_file("./TinHieuHuanLuyen")
 
         segmented_values = split_audio("./TinHieuHuanLuyen", lab_files)
@@ -113,7 +115,7 @@ if __name__ == "__main__":
             idx = int(start / (0.03 * sample_rate))
             y[idx] = f0_peak_searching[count]
             count += 1
-            
+
         ax1.scatter(x, y)
         ax1.set_xlabel("Time (s)")
         ax1.set_ylabel("F0 (Hz)")

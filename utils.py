@@ -2,6 +2,7 @@ import os
 import numpy as np
 from scipy.io import wavfile
 from scipy.signal import find_peaks
+from scipy.ndimage import gaussian_filter
 
 def read_wav_file(file_path: str):
     sample_rate, signal = wavfile.read(filename = file_path)
@@ -111,3 +112,9 @@ def get_f0_hps(ma_features: np.ndarray, sample_rate: int) -> tuple:
    
     
     return f0_list
+
+def filter(signal: np.ndarray):
+    return gaussian_filter(signal, sigma=2)
+
+def normalization(signal: np.ndarray):
+    return signal - np.mean(signal) / np.std(signal)
