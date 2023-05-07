@@ -49,24 +49,21 @@ def get_data_for_draw(vowel:list):
     return result_list
 
 
-def plot_voice_segment(signal:np.ndarray,result_list: list):
-    plt.plot(np.arange(len(signal)), signal)
-    for value in result_list:
-        plt.axvline(value[0], color = "r")
-        plt.axvline(value[1], color = "r")
-    plt.show()
+
 
 if __name__ == "__main__":
     file_infos = {
-        '30FTN': {'start': 0, 'end': 6.78},
-        '42FQT': {'start': 0, 'end': 5.79},
-        '44MTT': {'start': 0, 'end': 9.27},
-        '45MDV': {'start': 0, 'end': 7.42}
+        '01MDA': {'start': 0.00, 'end': 5.58,'F0mean':135.5,'F0std':5.4 },
+        '02FVA': {'start': 0.00, 'end': 7.18,'F0mean':239.7,'F0std':5.6},
+        '03MAB': {'start': 0.00, 'end': 9.37,'F0mean':115.0,'F0std':4.5},
+        '06FTB': {'start': 0.00, 'end': 12.75,'F0mean':202.9,'F0std':15.5}
     }
     
-    file_lst = os.listdir("./TinHieuHuanLuyen")
+    
+    file_lst = os.listdir("./TinHieuKiemThu")
     for file_name in file_infos.keys():
-        file_path = os.path.join("./TinHieuHuanLuyen", file_name + ".wav")
+        print(file_name)
+        file_path = os.path.join("./TinHieuKiemThu", file_name + ".wav")
         start = file_infos[file_name]['start']
         end = file_infos[file_name]['end']
         
@@ -74,9 +71,9 @@ if __name__ == "__main__":
         signal = normalization(signal)
         signal = filter(signal)
 
-        lab_files = read_lab_file("./TinHieuHuanLuyen")
+        lab_files = read_lab_file("./TinHieuKiemThu")
 
-        segmented_values = split_audio("./TinHieuHuanLuyen", lab_files)
+        segmented_values = split_audio("./TinHieuKiemThu", lab_files)
         
         window_size = 0.03  # kích thước cửa sổ là 30ms
         
@@ -88,11 +85,20 @@ if __name__ == "__main__":
         ma_features = extractor.ma(frames, is_statistic=False)
         mean_ma_features = np.mean(ma_features)
         print(mean_ma_features)
-
-        silence, vowel = define_frame_type(frames, ma_features, mean_ma_features)
+       
+        silence, vowel = define_frame_type(frames, ma_features, 0.18163196749981997)
+        fig = plt.figure()
+        axs = fig.subplots(nrows=3)
         
         draw_point = get_data_for_draw(vowel)
-        plot_voice_segment(signal, draw_point)
+        axs[0].plot(np.arange(len(signal)), signal)
+        
+        
+        for value in draw_point:
+            axs[0].axvline(value[0], color = "r")
+            axs[0].axvline(value[1], color = "r")
+        
+
         spectrograms=[]
         for start, end in vowel:
             segment = signal[start:end]
@@ -100,7 +106,6 @@ if __name__ == "__main__":
         
         
         data_array_spectrograms = np.vstack(spectrograms)
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
 
         f0_peak_searching = get_f0_peak_searching(data_array_spectrograms,sample_rate)
         
@@ -108,6 +113,17 @@ if __name__ == "__main__":
             if f0_peak_searching[i] < 70 or f0_peak_searching[i] > 400:
                 f0_peak_searching[i] = float("Nan")
       
+        f0_mean = np.nanmean(f0_peak_searching)
+        for i in range(len(f0_peak_searching)):
+            if f0_peak_searching[i] < (0.6 *f0_mean)  or f0_peak_searching[i] > (1.5 *f0_mean):
+                f0_peak_searching[i] = float("Nan")
+
+        f0_mean = np.nanmean(f0_peak_searching)
+        
+        dental_mean_f0 = np.abs(file_infos[file_name]['F0mean'] - f0_mean)
+        std = np.nanstd(f0_peak_searching)
+        dental_std_f0 = np.abs(file_infos[file_name]['F0std'] - std)
+
         x = np.arange(int(signal.shape[0] / (sample_rate * 0.03)))
         y = np.full(shape = x.shape, fill_value=np.nan)
         count = 0
@@ -116,10 +132,10 @@ if __name__ == "__main__":
             y[idx] = f0_peak_searching[count]
             count += 1
 
-        ax1.scatter(x, y)
-        ax1.set_xlabel("Time (s)")
-        ax1.set_ylabel("F0 (Hz)")
-        ax1.set_title("F0 contour using peak searching")
+        axs[1].scatter(x, y)
+        axs[1].set_xlabel("Time (s)")
+        axs[1].set_ylabel("F0 (Hz)")
+        axs[1].set_title(f"F0 contour using peak searching \n Mean F0 {f0_mean} std {std} \n F0 mean {file_infos[file_name]['F0mean']} F0 std {file_infos[file_name]['F0std']}")
 
     
         
@@ -131,16 +147,11 @@ if __name__ == "__main__":
         draw_point = get_data_for_draw(vowel)
         x = [((start+end)/2)/sample_rate for start, end in vowel]
         y = f0_peak_hps
-        ax2.scatter(x, y)
-        ax2.set_xlabel("Time (s)")
-        ax2.set_ylabel("F0 (Hz)")
-        ax2.set_title("F0 contour using harmonic product spectrum")
+        axs[2].scatter(x, y)
+        axs[2].set_xlabel("Time (s)")
+        axs[2].set_ylabel("F0 (Hz)")
+        axs[2].set_title("F0 contour using harmonic product spectrum")
         
-        f0_mean = np.nanmean(f0_peak_searching)
-        print("Mean F0 (peak searching): ", f0_mean)
-
-        f0_mean = np.nanmean(f0_peak_hps)
-        print("Mean F0 (harmonic product spectrum): ", f0_mean)
         plt.tight_layout()
         plt.show()
 

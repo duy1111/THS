@@ -65,12 +65,12 @@ def BinarySearch(start : float, end : float, start_list : list, end_list : list)
 
 
 
-def get_f0_peak_searching(ma_features: np.ndarray, sample_rate: int) -> tuple:
+def get_f0_peak_searching(data_array_spectrograms: np.ndarray, sample_rate: int) -> tuple:
     f0_list = []
    
     
-    for i in range(ma_features.shape[0]):
-        mag_spectrum = np.abs(np.fft.fft(ma_features[i]))[:len(ma_features[i]) // 2]
+    for i in range(data_array_spectrograms.shape[0]):
+        mag_spectrum = np.abs(np.fft.fft(data_array_spectrograms[i]))[:len(data_array_spectrograms[i]) // 2]
         freqs = np.fft.fftfreq(len(mag_spectrum), d=1/sample_rate)[:len(mag_spectrum)]
         peaks, _ = find_peaks(mag_spectrum, distance=3)
         
